@@ -34,8 +34,10 @@ const scrollDown   = document.getElementById('scroll-down');
 // INIT
 // ============================================================
 async function init() {
+  console.log('[TAGG] Initializing...');
   settings = await tagg.getSettings();
   state    = await tagg.getState();
+  console.log('[TAGG] State:', state);
   renderAll();
   tagg.onStateUpdate(s => { state = s; renderAll(); });
 }
@@ -362,6 +364,7 @@ document.getElementById('win-max').addEventListener('click',   () => tagg.maximi
 document.getElementById('sb-close').addEventListener('click',  () => tagg.close());
 document.getElementById('sb-min').addEventListener('click',    () => tagg.minimize());
 document.getElementById('fs-btn')?.addEventListener('click',   () => tagg.fullscreen());
+document.getElementById('devtools-btn')?.addEventListener('click', () => tagg.openDevTools());
 
 // ============================================================
 // UTILS

@@ -58,8 +58,8 @@ function createWindow() {
   // Load the UI shell
   mainWin.loadFile(path.join(__dirname, 'ui/index.html'));
 
-  // Open DevTools for debugging (remove in production)
-  mainWin.webContents.openDevTools({ mode: 'detach' });
+  // Open DevTools on startup to debug
+  mainWin.webContents.openDevTools({ mode: 'bottom' });
 
   mainWin.on('resize', layoutViews);
   mainWin.on('closed', () => { mainWin = null; });
@@ -411,6 +411,9 @@ ipcMain.on('win-maximize', () => {
 ipcMain.on('win-close',    () => mainWin?.close());
 ipcMain.on('win-fullscreen', () => {
   mainWin?.setFullScreen(!mainWin?.isFullScreen());
+});
+ipcMain.on('open-devtools', () => {
+  mainWin?.webContents?.openDevTools({ mode: 'detach' });
 });
 
 // ============================================================

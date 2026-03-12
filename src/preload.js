@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('tagg', {
   maximize: () => ipcRenderer.send('win-maximize'),
   close:    () => ipcRenderer.send('win-close'),
   fullscreen: () => ipcRenderer.send('win-fullscreen'),
+  openDevTools: () => ipcRenderer.send('open-devtools'),
 
   // ---- PLATFORM ----
   platform: process.platform
