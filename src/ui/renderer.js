@@ -1,3 +1,14 @@
+const panelOverlay = document.getElementById('panel-overlay');
+aiClose.addEventListener('click', () => toggleAI(false));
+panelOverlay.addEventListener('click', () => toggleAI(false));
+
+function toggleAI(force) {
+  aiOpen = force !== undefined ? force : !aiOpen;
+  aiPanel.classList.toggle('open', aiOpen);
+  aiBtn.classList.toggle('active', aiOpen);
+  panelOverlay.style.display = aiOpen ? 'block' : 'none';
+  if (aiOpen) setTimeout(() => aiInput.focus(), 300);
+}
 // ============================================================
 // TAGG — Renderer (Holorun-style layout)
 // ============================================================
@@ -99,14 +110,25 @@ function renderMainView() {
   const mainUrl = document.getElementById('main-url');
   const mainDot = document.querySelector('.main-dot');
   const dotsContainer = document.getElementById('pagination-dots');
-  
+  const placeholder = document.getElementById('browser-placeholder');
+
   if (mainUrl) {
     mainUrl.textContent = state.activeUrl || 'about:blank';
   }
   if (mainDot) {
     mainDot.classList.toggle('secure', (state.activeUrl || '').startsWith('https://'));
   }
-  
+
+  // Update browser-placeholder with site info
+  if (placeholder) {
+    const tab = (state.tabs || []).find(t => t.id === state.activeTab);
+    if (tab) {
+      placeholder.innerHTML = `<div style="font-size:13px;color:#333;">${tab.title || 'No title'}</div><div style="font-size:11px;color:#888;">${tab.url || ''}</div>`;
+    } else {
+      placeholder.innerHTML = 'web content';
+    }
+  }
+
   // Pagination dots
   if (dotsContainer) {
     dotsContainer.innerHTML = '';
@@ -190,8 +212,24 @@ reloadBtn.addEventListener('click', () => {
 document.getElementById('home-btn')?.addEventListener('click', () => tagg.navigate('https://www.google.com'));
 
 // New tab
-document.getElementById('new-tab-card').addEventListener('click', () => tagg.newTab());
-document.getElementById('sb-max').addEventListener('click', () => tagg.newTab());
+const newTabCard = document.getElementById('new-tab-card');
+console.log('[TAGG] new-tab-card element:', newTabCard);
+if (newTabCard) {
+  newTabCard.addEventListener('click', () => {
+    console.log('[TAGG] New tab clicked!');
+    tagg.newTab().then(() => console.log('[TAGG] New tab created'));
+  });
+} else {
+  console.error('[TAGG] new-tab-card NOT FOUND!');
+}
+
+const sbMax = document.getElementById('sb-max');
+if (sbMax) {
+  sbMax.addEventListener('click', () => {
+    console.log('[TAGG] Sidebar + clicked');
+    tagg.newTab();
+  });
+}
 
 // ============================================================
 // KEYBOARD SHORTCUTS

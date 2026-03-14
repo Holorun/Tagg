@@ -95,6 +95,34 @@ function createTab(url = 'https://www.google.com', background = false) {
   // Wire up events
   const wc = view.webContents;
 
+  // Add custom context menu for highlighting
+  wc.on('context-menu', (event, params) => {
+    if (params.selectionText && params.selectionText.trim()) {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Highlight with Tagg',
+          click: () => {
+            wc.executeJavaScript(`
+              (function() {
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount > 0) {
+                  const range = sel.getRangeAt(0);
+                  const span = document.createElement('span');
+                  span.style.background = '#ffe066';
+                  span.style.color = '#222';
+                  span.style.borderRadius = '3px';
+                  span.style.padding = '0 2px';
+                  range.surroundContents(span);
+                }
+              })();
+            `);
+          }
+        }
+      ]);
+      menu.popup();
+    }
+  });
+
   wc.on('did-start-loading', () => {
     updateTab(id, { loading: true });
   });
@@ -215,13 +243,14 @@ const BOTTOM_STRIP_H = 128; // Bottom thumbnail strip
 function layoutViews() {
   if (!mainWin) return;
   const [winW, winH] = mainWin.getContentSize();
-  
-  // Calculate browser content area (accounting for UI elements)
-  const contentX = SIDEBAR_W;
-  const contentY = TAB_BAR_HEIGHT + 8; // top bar + padding
-  const mainUrlBarH = 36; // URL bar inside main view
-  const contentW = winW - SIDEBAR_W - RIGHT_PANEL_W - 16; // minus padding
-  const contentH = winH - TAB_BAR_HEIGHT - BOTTOM_STRIP_H - 16; // minus bottom strip
+  // Calculate main-view area (center-area only)
+  // Get center-area position/size from renderer
+  // Hardcode for now: left sidebar 48px, right panel 266px, bottom strip 128px, padding 8px
+  const mainViewX = SIDEBAR_W + 8;
+  const mainViewY = TAB_BAR_HEIGHT + 8;
+  const mainViewW = winW - SIDEBAR_W - RIGHT_PANEL_W - 16;
+  const mainViewH = winH - TAB_BAR_HEIGHT - BOTTOM_STRIP_H - 16;
+  const mainUrlBarH = 36;
 
   // Hide all views first
   for (const [id, view] of views) {
@@ -229,39 +258,56 @@ function layoutViews() {
   }
 
   if (!activeTab) return;
-
   const activeView = views.get(activeTab);
   if (!activeView) return;
 
+  // --- Dynamic sizing modes ---
+  // mode: 'fit-content' or 'center-content'
+  const mode = store.layoutMode || 'fit-content'; // toggle with settings
   if (splitTab && splitTab !== activeTab) {
-    // Split: left = active, right = split
-    const half = Math.floor(contentW / 2);
+    // Split view logic unchanged
+    const half = Math.floor(mainViewW / 2);
     const divider = 2;
-
     activeView.setBounds({
-      x: contentX, y: contentY + mainUrlBarH,
+      x: mainViewX,
+      y: mainViewY + mainUrlBarH,
       width: half - divider,
-      height: contentH - mainUrlBarH
+      height: mainViewH - mainUrlBarH
     });
-
     const splitView = views.get(splitTab);
     if (splitView) {
       splitView.setBounds({
-        x: contentX + half + divider, y: contentY + mainUrlBarH,
-        width: contentW - half - divider,
-        height: contentH - mainUrlBarH
+        x: mainViewX + half + divider,
+        y: mainViewY + mainUrlBarH,
+        width: mainViewW - half - divider,
+        height: mainViewH - mainUrlBarH
       });
     }
   } else {
-    // Single view - positioned inside main-view area
-    activeView.setBounds({
-      x: contentX + 8, 
-      y: contentY + mainUrlBarH,
-      width: contentW - 16,
-      height: contentH - mainUrlBarH - 8
+    // Single view - dynamic sizing
+    activeView.webContents.executeJavaScript(`({
+      w: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
+      h: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
+    })`).then(dim => {
+      let w = mainViewW, h = mainViewH - mainUrlBarH, x = mainViewX, y = mainViewY + mainUrlBarH;
+      if (mode === 'fit-content' && dim && dim.w && dim.h) {
+        w = Math.min(dim.w, mainViewW);
+        h = Math.min(dim.h, mainViewH - mainUrlBarH);
+        // Center if smaller
+        x = mainViewX + Math.floor((mainViewW - w) / 2);
+        y = mainViewY + mainUrlBarH + Math.floor((mainViewH - mainUrlBarH - h) / 2);
+      }
+      activeView.setBounds({ x, y, width: w, height: h });
+    }).catch(() => {
+      // fallback
+      activeView.setBounds({
+        x: mainViewX,
+        y: mainViewY + mainUrlBarH,
+        width: mainViewW,
+        height: mainViewH - mainUrlBarH
+      });
     });
   }
-
   // Bring active views to front
   mainWin.setTopBrowserView(activeView);
   if (splitTab) {
