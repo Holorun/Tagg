@@ -271,9 +271,6 @@ function layoutViews() {
   const activeView = views.get(activeTab);
   if (!activeView) return;
 
-  // --- Dynamic sizing modes ---
-  // mode: 'fit-content' or 'center-content'
-  const mode = store.layoutMode || 'fit-content'; // toggle with settings
   if (splitTab && splitTab !== activeTab) {
     // Split view logic unchanged
     const half = Math.floor(mainViewW / 2);
@@ -294,28 +291,12 @@ function layoutViews() {
       });
     }
   } else {
-    // Single view - dynamic sizing
-    activeView.webContents.executeJavaScript(`({
-      w: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
-      h: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
-    })`).then(dim => {
-      let w = mainViewW, h = mainViewH - mainUrlBarH, x = mainViewX, y = mainViewY + mainUrlBarH;
-      if (mode === 'fit-content' && dim && dim.w && dim.h) {
-        w = Math.min(dim.w, mainViewW);
-        h = Math.min(dim.h, mainViewH - mainUrlBarH);
-        // Center if smaller
-        x = mainViewX + Math.floor((mainViewW - w) / 2);
-        y = mainViewY + mainUrlBarH + Math.floor((mainViewH - mainUrlBarH - h) / 2);
-      }
-      activeView.setBounds({ x, y, width: w, height: h });
-    }).catch(() => {
-      // fallback
-      activeView.setBounds({
-        x: mainViewX,
-        y: mainViewY + mainUrlBarH,
-        width: mainViewW,
-        height: mainViewH - mainUrlBarH
-      });
+    // Fill the available main view area
+    activeView.setBounds({
+      x: mainViewX,
+      y: mainViewY + mainUrlBarH,
+      width: Math.max(mainViewW, 200),
+      height: Math.max(mainViewH - mainUrlBarH, 100)
     });
   }
   // Bring active views to front
