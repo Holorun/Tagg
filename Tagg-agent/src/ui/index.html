@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src * data:; script-src 'self'">
+<title>Tagg</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- PANEL OVERLAY for outside click -->
+<div id="panel-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:199;background:rgba(0,0,0,0.01);"></div>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="traffic-spacer"></div>
+  <div id="win-controls">
+    <button class="win-btn close" id="win-close">✕</button>
+    <button class="win-btn" id="win-min">—</button>
+    <button class="win-btn" id="win-max">□</button>
+  </div>
+  <div id="top-url-wrap">
+    <div class="url-dot" id="url-dot"></div>
+    <input id="url-input" type="text" spellcheck="false" autocomplete="off" placeholder="Search or enter address…">
+    <div class="loading-dot" id="loading-dot"></div>
+  </div>
+  <div id="topbar-right">
+    <button class="top-btn" id="screenshot-btn" title="Capture & Analyze Page">📷</button>
+    <button class="top-btn" id="ai-btn" title="Tagg AI">✦</button>
+    <button class="top-btn" id="panel-toggle-btn" title="Toggle panel">▤</button>
+    <button class="top-btn" id="devtools-btn" title="Open DevTools">🛠</button>
+  </div>
+</div>
+
+  <!-- MAIN HOLO ONLY -->
+  <div id="layout">
+    <!-- LEFT SIDEBAR (Holorun style) -->
+    <div id="left-sidebar">
+      <div class="sidebar-group">
+        <button class="sidebar-btn" id="sb-close">✕</button>
+        <button class="sidebar-btn" id="sb-min">—</button>
+        <button class="sidebar-btn" id="sb-max">+</button>
+      </div>
+      <div class="sidebar-group nav-group">
+        <button class="sidebar-btn" id="back-btn" title="Back" disabled>
+          <svg width="16" height="16" viewBox="0 0 11 11" fill="none"><path d="M7.5 1.5L2.5 5.5L7.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="sidebar-btn" id="fwd-btn" title="Forward" disabled>
+          <svg width="16" height="16" viewBox="0 0 11 11" fill="none"><path d="M3.5 1.5L8.5 5.5L3.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="sidebar-btn" id="reload-btn" title="Reload">
+          <svg width="16" height="16" viewBox="0 0 11 11" fill="none"><path d="M9.5 2A4.5 4.5 0 1 0 10.5 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 2V4.5H8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="sidebar-btn" id="home-btn" title="Home">
+          <svg width="16" height="16" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="3.8" stroke="currentColor" stroke-width="1.3"/><circle cx="5.5" cy="5.5" r="1.4" fill="currentColor"/></svg>
+        </button>
+        <button class="sidebar-btn" id="fs-btn" title="Fullscreen">
+          <svg width="16" height="16" viewBox="0 0 11 11" fill="none"><path d="M1 3.5V1H3.5M7.5 1H10V3.5M10 7.5V10H7.5M3.5 10H1V7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-indicator"></div>
+      </div>
+    </div>
+    <!-- MAIN HOLO VIEW ONLY -->
+    <div id="center-area">
+      <div id="main-view">
+        <div id="main-urlbar">
+          <div class="main-dot"></div>
+          <span class="main-lock">🔒</span>
+          <span id="main-url">http://example.com</span>
+        </div>
+        <button class="side-arrow left" id="prev-tab">‹</button>
+        <button class="side-arrow right" id="next-tab">›</button>
+        <div id="pagination-dots"></div>
+        <div id="browser-placeholder">web content</div>
+      </div>
+      <!-- BOTTOM STRIP -->
+      <div id="bottom-strip">
+        <button class="strip-arrow" id="strip-prev">‹</button>
+        <div id="strip-tabs"></div>
+        <button class="strip-arrow" id="strip-next">›</button>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div id="divider">
+      <div id="divider-arrow">›</div>
+    </div>
+
+    <!-- RIGHT PANEL (Tab Cards) -->
+    <div id="right-panel">
+      <button class="panel-arrow" id="scroll-up">▲</button>
+      <div id="tabs-scroll-area"></div>
+      <button class="panel-arrow bottom" id="scroll-down">▼</button>
+      <div id="new-tab-card">＋ New Tab</div>
+    </div>
+  </div>
+
+<!-- AI PANEL -->
+<div id="ai-panel">
+  <div id="ai-header">
+    <div id="ai-logo">✦</div>
+    <span id="ai-title">Tagg AI</span>
+    <button id="ai-close">✕</button>
+  </div>
+  <div id="ai-messages">
+    <div class="msg msg-ai">
+      <div class="msg-label">Tagg AI</div>
+      <div>Hi — I'm built into Tagg. Ask me anything about what you're browsing.</div>
+    </div>
+  </div>
+  <div id="ai-chips">
+    <button class="ai-chip" data-q="Summarize this page">Summarize</button>
+    <button class="ai-chip" data-q="What are the key points?">Key points</button>
+    <button class="ai-chip" data-q="Find related topics">Related</button>
+  </div>
+  <div id="ai-input-row">
+    <textarea id="ai-input" placeholder="Ask anything…" rows="1"></textarea>
+    <button id="ai-send">↑</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="renderer.js"></script>
+</body>
+</html>
