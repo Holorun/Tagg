@@ -10,15 +10,21 @@ const path = require('path');
 const fs   = require('fs');
 
 // ---- STORE (simple JSON persistence) ----
-const storePath = path.join(app.getPath('userData'), 'tagg-store.json');
+// storePath is resolved lazily after app is ready (app.getPath requires app to be ready on Windows)
+let storePath = null;
+
+function getStorePath() {
+  if (!storePath) storePath = path.join(app.getPath('userData'), 'tagg-store.json');
+  return storePath;
+}
 
 function readStore() {
-  try { return JSON.parse(fs.readFileSync(storePath, 'utf8')); }
+  try { return JSON.parse(fs.readFileSync(getStorePath(), 'utf8')); }
   catch { return {}; }
 }
 
 function writeStore(data) {
-  try { fs.writeFileSync(storePath, JSON.stringify(data, null, 2)); }
+  try { fs.writeFileSync(getStorePath(), JSON.stringify(data, null, 2)); }
   catch {}
 }
 
@@ -30,14 +36,16 @@ let activeTab = null;        // tabId
 let splitTab  = null;        // tabId of right-pane tab (null = no split)
 let nextId    = 1;
 
-const TAB_BAR_HEIGHT = 36 + 0; // topbar only — no separate address bar in Holorun layout
-// Note: In Holorun layout the URL bar is IN the topbar, so content starts right after
-const store = readStore();
+const TAB_BAR_HEIGHT = 36; // topbar only — no separate address bar in Holorun layout
+// store is read lazily inside createWindow after app is ready
+let store = {};
 
 // ============================================================
 // CREATE MAIN WINDOW
 // ============================================================
 function createWindow() {
+  store = readStore(); // safe to call now — app is ready
+
   mainWin = new BrowserWindow({
     width:  1280,
     height: 800,
