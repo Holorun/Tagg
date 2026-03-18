@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('tagg', {
     ipcRenderer.on('state-update', (e, state) => cb(state));
   },
 
+  // ---- LAYOUT ----
+  queryAndLayout: () => ipcRenderer.invoke('query-and-layout'),
+
   // ---- WINDOW CONTROLS ----
   minimize: () => ipcRenderer.send('win-minimize'),
   maximize: () => ipcRenderer.send('win-maximize'),

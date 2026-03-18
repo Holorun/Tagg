@@ -4,8 +4,7 @@
 // manages BrowserViews for tabs + split view.
 // ============================================================
 
-const { app, BrowserWindow, BrowserView, ipcMain,
-        session, dialog, shell, Menu } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, Menu } = require('electron');
 const path = require('path');
 const fs   = require('fs');
 
@@ -36,7 +35,6 @@ let activeTab = null;        // tabId
 let splitTab  = null;        // tabId of right-pane tab (null = no split)
 let nextId    = 1;
 
-const TAB_BAR_HEIGHT = 36; // topbar only — no separate address bar in Holorun layout
 // store is read lazily inside createWindow after app is ready
 let store = {};
 let cachedRect = null; // last measured content area — updated on resize & initial load
@@ -108,7 +106,7 @@ function createTab(url = 'https://www.google.com', background = false) {
   const wc = view.webContents;
 
   // Add custom context menu for highlighting
-  wc.on('context-menu', (event, params) => {
+  wc.on('context-menu', (_event, params) => {
     if (params.selectionText && params.selectionText.trim()) {
       const menu = Menu.buildFromTemplate([
         {
@@ -149,20 +147,20 @@ function createTab(url = 'https://www.google.com', background = false) {
     updateTab(id, { url: wc.getURL(), title: wc.getTitle() });
   });
 
-  wc.on('page-title-updated', (e, title) => {
+  wc.on('page-title-updated', (_e, title) => {
     updateTab(id, { title });
   });
 
-  wc.on('page-favicon-updated', (e, favicons) => {
+  wc.on('page-favicon-updated', (_e, favicons) => {
     if (favicons[0]) updateTab(id, { favicon: favicons[0] });
   });
 
-  wc.on('did-navigate', (e, url) => {
+  wc.on('did-navigate', (_e, url) => {
     updateTab(id, { url, loading: false });
     broadcastUI();
   });
 
-  wc.on('did-navigate-in-page', (e, url) => {
+  wc.on('did-navigate-in-page', (_e, url) => {
     updateTab(id, { url });
     broadcastUI();
   });
@@ -348,10 +346,10 @@ function broadcastUI() {
 // ============================================================
 // IPC — UI → Main process
 // ============================================================
-ipcMain.handle('new-tab',      (e, url)     => createTab(url));
-ipcMain.handle('close-tab',    (e, id)      => closeTab(id));
-ipcMain.handle('switch-tab',   (e, id)      => setActiveTab(id));
-ipcMain.handle('navigate',     (e, url)     => {
+ipcMain.handle('new-tab',      (_e, url)    => createTab(url));
+ipcMain.handle('close-tab',    (_e, id)     => closeTab(id));
+ipcMain.handle('switch-tab',   (_e, id)     => setActiveTab(id));
+ipcMain.handle('navigate',     (_e, url)    => {
   const v = views.get(activeTab);
   if (v) v.webContents.loadURL(normalizeUrl(url));
 });
@@ -360,9 +358,9 @@ ipcMain.handle('go-forward',   ()           => views.get(activeTab)?.webContents
 ipcMain.handle('reload',       ()           => views.get(activeTab)?.webContents?.reload());
 ipcMain.handle('stop',         ()           => views.get(activeTab)?.webContents?.stop());
 
-ipcMain.handle('enable-split',  (e, id)     => enableSplit(id));
+ipcMain.handle('enable-split',  (_e, id)    => enableSplit(id));
 ipcMain.handle('disable-split', ()          => disableSplit());
-ipcMain.handle('split-navigate',(e, url)    => {
+ipcMain.handle('split-navigate',(_e, url)   => {
   const v = views.get(splitTab);
   if (v) v.webContents.loadURL(normalizeUrl(url));
 });
@@ -375,10 +373,11 @@ ipcMain.handle('get-state',    ()           => ({
   splitUrl:     splitTab ? (views.get(splitTab)?.webContents?.getURL() || '') : ''
 }));
 
-ipcMain.handle('get-settings', ()           => readStore());
-ipcMain.handle('save-settings',(e, data)    => { writeStore({ ...readStore(), ...data }); });
+ipcMain.handle('get-settings',    ()        => readStore());
+ipcMain.handle('save-settings',   (_e, data) => { writeStore({ ...readStore(), ...data }); });
+ipcMain.handle('query-and-layout', ()       => queryAndLayout());
 
-ipcMain.handle('ask-ai', async (e, { prompt, apiKey, context }) => {
+ipcMain.handle('ask-ai', async (_e, { prompt, apiKey, context }) => {
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -421,7 +420,7 @@ ipcMain.handle('capture-screenshot', async () => {
   }
 });
 
-ipcMain.handle('analyze-screenshot', async (e, { base64, apiKey, prompt }) => {
+ipcMain.handle('analyze-screenshot', async (_e, { base64, apiKey, prompt }) => {
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

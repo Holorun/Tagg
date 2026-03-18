@@ -200,6 +200,81 @@ async function captureAndAnalyze() {
 }
 
 // ============================================================
+// MAIN VIEW — DRAG TO MOVE + RESIZE
+// ============================================================
+const mainViewEl   = document.getElementById('main-view');
+const centerAreaEl = document.getElementById('center-area');
+const mainDrag     = document.getElementById('main-drag');
+
+let dragOp = null; // { type:'move'|'resize', dir, sx, sy, r:{l,t,w,h} }
+
+function getMVRect() {
+  const ca = centerAreaEl.getBoundingClientRect();
+  const mv = mainViewEl.getBoundingClientRect();
+  return { l: mv.left - ca.left, t: mv.top - ca.top, w: mv.width, h: mv.height };
+}
+
+function applyMVRect(l, t, w, h) {
+  const ca = centerAreaEl.getBoundingClientRect();
+  w = Math.max(w, 280); h = Math.max(h, 120);
+  l = Math.max(0, Math.min(l, ca.width  - w));
+  t = Math.max(0, Math.min(t, ca.height - h));
+  mainViewEl.style.left   = l + 'px';
+  mainViewEl.style.top    = t + 'px';
+  mainViewEl.style.width  = w + 'px';
+  mainViewEl.style.height = h + 'px';
+}
+
+// Drag handle — move the view
+mainDrag.addEventListener('mousedown', e => {
+  e.preventDefault();
+  mainViewEl.classList.add('is-positioned');
+  dragOp = { type: 'move', sx: e.clientX, sy: e.clientY, r: getMVRect() };
+});
+
+// Double-click drag handle — reset to fill
+mainDrag.addEventListener('dblclick', () => {
+  mainViewEl.classList.remove('is-positioned');
+  mainViewEl.style.cssText = '';
+  tagg.queryAndLayout();
+  showToast('View reset to fill');
+});
+
+// Edge/corner handles — resize
+document.querySelectorAll('.mv-handle').forEach(h => {
+  h.addEventListener('mousedown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    mainViewEl.classList.add('is-positioned');
+    dragOp = { type: 'resize', dir: h.dataset.dir, sx: e.clientX, sy: e.clientY, r: getMVRect() };
+  });
+});
+
+document.addEventListener('mousemove', e => {
+  if (!dragOp) return;
+  const dx = e.clientX - dragOp.sx;
+  const dy = e.clientY - dragOp.sy;
+  let { l, t, w, h } = dragOp.r;
+
+  if (dragOp.type === 'move') {
+    l += dx; t += dy;
+  } else {
+    const d = dragOp.dir;
+    if (d.includes('e')) w += dx;
+    if (d.includes('s')) h += dy;
+    if (d.includes('w')) { l += dx; w -= dx; }
+    if (d.includes('n')) { t += dy; h -= dy; }
+  }
+  applyMVRect(l, t, w, h);
+});
+
+document.addEventListener('mouseup', () => {
+  if (!dragOp) return;
+  dragOp = null;
+  tagg.queryAndLayout();
+});
+
+// ============================================================
 // WINDOW CONTROLS
 // ============================================================
 document.getElementById('win-close').addEventListener('click', () => tagg.close());

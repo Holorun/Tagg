@@ -113,6 +113,7 @@ body.mac #win-controls    { display:none!important; }
 /* ============================================================ CENTER AREA (Holorun style) */
 #center-area {
   flex:1;display:flex;flex-direction:column;
+  position:relative;          /* anchor for absolutely-positioned main-view */
   padding:8px;gap:8px;
 }
 
@@ -125,8 +126,42 @@ body.mac #win-controls    { display:none!important; }
   overflow:hidden;
 }
 
+/* When user drags/resizes, switch to absolute positioning */
+#main-view.is-positioned {
+  position:absolute;
+  flex:none;
+}
+
+/* ---- Drag handle (top strip — grab to move) ---- */
+#main-drag {
+  position:absolute;top:0;left:0;right:0;height:6px;z-index:15;
+  cursor:grab;background:transparent;
+  display:flex;align-items:center;justify-content:center;
+}
+#main-drag:active { cursor:grabbing; }
+#main-drag::after {
+  content:'';width:24px;height:3px;border-radius:2px;
+  background:rgba(255,255,255,0.06);transition:background 0.2s;
+}
+#main-view:hover #main-drag::after { background:rgba(180,210,200,0.3); }
+
+/* ---- Resize handles (edges + corners) ---- */
+.mv-handle {
+  position:absolute;z-index:15;background:transparent;
+  opacity:0;transition:opacity 0.2s;
+}
+#main-view:hover .mv-handle { opacity:1; }
+.mv-handle.n  { top:0;    left:14px; right:14px; height:5px; cursor:ns-resize; }
+.mv-handle.s  { bottom:0; left:14px; right:14px; height:5px; cursor:ns-resize; }
+.mv-handle.e  { right:0;  top:14px; bottom:14px; width:5px;  cursor:ew-resize; }
+.mv-handle.w  { left:0;   top:14px; bottom:14px; width:5px;  cursor:ew-resize; }
+.mv-handle.ne { top:0; right:0; width:14px; height:14px; cursor:ne-resize; }
+.mv-handle.nw { top:0; left:0;  width:14px; height:14px; cursor:nw-resize; }
+.mv-handle.se { bottom:0; right:0; width:14px; height:14px; cursor:se-resize; }
+.mv-handle.sw { bottom:0; left:0;  width:14px; height:14px; cursor:sw-resize; }
+
 #main-urlbar {
-  position:absolute;top:0;left:0;right:0;z-index:10;
+  position:absolute;top:6px;left:0;right:0;z-index:10;
   display:flex;align-items:center;gap:8px;
   padding:8px 12px;
   background:rgba(30,45,40,0.95);backdrop-filter:blur(8px);
