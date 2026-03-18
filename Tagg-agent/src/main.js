@@ -39,6 +39,7 @@ let nextId    = 1;
 const TAB_BAR_HEIGHT = 36; // topbar only — no separate address bar in Holorun layout
 // store is read lazily inside createWindow after app is ready
 let store = {};
+let cachedRect = null; // last measured content area — updated on resize & initial load
 
 // ============================================================
 // CREATE MAIN WINDOW
@@ -71,11 +72,12 @@ function createWindow() {
     mainWin.webContents.openDevTools({ mode: 'bottom' });
   }
 
-  mainWin.on('resize', layoutViews);
+  mainWin.on('resize', queryAndLayout);
   mainWin.on('closed', () => { mainWin = null; });
 
-  // Open new tab on startup
-  mainWin.webContents.once('did-finish-load', () => {
+  // Open new tab on startup — query DOM rect first so layoutViews has it
+  mainWin.webContents.once('did-finish-load', async () => {
+    cachedRect = await queryRect();
     const startUrl = store.lastUrl || 'https://www.google.com';
     createTab(startUrl);
   });
@@ -244,63 +246,86 @@ function disableSplit() {
 }
 
 // ============================================================
-// LAYOUT — position BrowserViews (Holorun style)
+// LAYOUT — position BrowserViews to match actual DOM layout
 // ============================================================
-const SIDEBAR_W    = 48; // Left sidebar width
-const MAIN_URL_H   = 36; // #main-urlbar height inside main-view
-const PADDING      = 8;  // #center-area padding
 
+// Query the exact rendered content area from the shell DOM.
+// Returns null if the query fails (e.g. renderer not ready).
+async function queryRect() {
+  if (!mainWin?.webContents) return null;
+  try {
+    return await mainWin.webContents.executeJavaScript(`
+      (() => {
+        const urlbar   = document.getElementById('main-urlbar');
+        const mainView = document.getElementById('main-view');
+        if (!mainView || !urlbar) return null;
+        const mv = mainView.getBoundingClientRect();
+        const ub = urlbar.getBoundingClientRect();
+        return {
+          x: Math.round(mv.left),
+          y: Math.round(ub.bottom),
+          w: Math.round(mv.width),
+          h: Math.round(mv.bottom - ub.bottom)
+        };
+      })()
+    `);
+  } catch { return null; }
+}
+
+// Re-query the DOM rect then immediately re-layout.
+// Called on resize so the cache stays in sync with window size.
+async function queryAndLayout() {
+  cachedRect = await queryRect();
+  layoutViews();
+}
+
+// Synchronous layout — uses cachedRect so it never causes jank.
+// cachedRect is populated on initial load and on every resize.
 function layoutViews() {
   if (!mainWin) return;
-  const [winW, winH] = mainWin.getContentSize();
-  const mainViewX = SIDEBAR_W + PADDING;
-  const mainViewY = TAB_BAR_HEIGHT + PADDING + MAIN_URL_H;
-  const mainViewW = winW - SIDEBAR_W - PADDING * 2;
-  const mainViewH = winH - TAB_BAR_HEIGHT - PADDING * 2 - MAIN_URL_H;
-  const mainUrlBarH = 0; // already accounted for in mainViewY
 
-  // Hide all views first
+  // Hide all inactive views
   for (const [id, view] of views) {
-    view.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+    if (id !== activeTab && id !== splitTab) {
+      view.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+    }
   }
 
   if (!activeTab) return;
   const activeView = views.get(activeTab);
-  if (!activeView) return;
+  if (!activeView || !cachedRect || cachedRect.w < 10 || cachedRect.h < 10) return;
+
+  const { x, y, w, h } = cachedRect;
 
   if (splitTab && splitTab !== activeTab) {
-    // Split view logic unchanged
-    const half = Math.floor(mainViewW / 2);
+    const half    = Math.floor(w / 2);
     const divider = 2;
     activeView.setBounds({
-      x: mainViewX,
-      y: mainViewY + mainUrlBarH,
-      width: half - divider,
-      height: mainViewH - mainUrlBarH
+      x,
+      y,
+      width:  Math.max(half - divider, 100),
+      height: Math.max(h, 100)
     });
     const splitView = views.get(splitTab);
     if (splitView) {
       splitView.setBounds({
-        x: mainViewX + half + divider,
-        y: mainViewY + mainUrlBarH,
-        width: mainViewW - half - divider,
-        height: mainViewH - mainUrlBarH
+        x: x + half + divider,
+        y,
+        width:  Math.max(w - half - divider, 100),
+        height: Math.max(h, 100)
       });
     }
   } else {
     activeView.setBounds({
-      x: mainViewX,
-      y: mainViewY,
-      width:  Math.max(mainViewW, 200),
-      height: Math.max(mainViewH, 100)
+      x,
+      y,
+      width:  Math.max(w, 200),
+      height: Math.max(h, 100)
     });
   }
-  // Bring active views to front
+
+  // Active tab always on top (both panes visible side-by-side in split mode)
   mainWin.setTopBrowserView(activeView);
-  if (splitTab) {
-    const sv = views.get(splitTab);
-    if (sv) mainWin.setTopBrowserView(sv);
-  }
 }
 
 // ============================================================
