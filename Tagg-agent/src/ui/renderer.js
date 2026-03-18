@@ -1,44 +1,34 @@
 // ============================================================
-// TAGG — Renderer (Holorun-style layout)
+// TAGG — Renderer
 // ============================================================
 
 const tagg = window.tagg;
 
 if (tagg.platform === 'darwin') document.body.classList.add('mac');
 
-let state = { tabs:[], activeTab:null, splitTab:null, activeUrl:'', canGoBack:false, canGoForward:false };
-let settings = {};
+let state = { tabs:[], activeTab:null, activeUrl:'', canGoBack:false, canGoForward:false };
 let aiOpen = false;
-let panelCollapsed = false;
 
 // ---- ELEMENTS ----
-const urlInput     = document.getElementById('url-input');
-const urlWrap      = document.getElementById('top-url-wrap');
-const urlDot       = document.getElementById('url-dot');
-const backBtn      = document.getElementById('back-btn');
-const fwdBtn       = document.getElementById('fwd-btn');
-const reloadBtn    = document.getElementById('reload-btn');
-const tabsArea     = document.getElementById('tabs-scroll-area');
-const rightPanel   = document.getElementById('right-panel');
-const divArrow     = document.getElementById('divider-arrow');
-const aiPanel      = document.getElementById('ai-panel');
-const aiBtn        = document.getElementById('ai-btn');
-const aiClose      = document.getElementById('ai-close');
-const aiMessages   = document.getElementById('ai-messages');
-const aiInput      = document.getElementById('ai-input');
-const aiSend       = document.getElementById('ai-send');
-const scrollUp     = document.getElementById('scroll-up');
-const scrollDown   = document.getElementById('scroll-down');
+const urlInput   = document.getElementById('url-input');
+const urlWrap    = document.getElementById('top-url-wrap');
+const urlDot     = document.getElementById('url-dot');
+const backBtn    = document.getElementById('back-btn');
+const fwdBtn     = document.getElementById('fwd-btn');
+const reloadBtn  = document.getElementById('reload-btn');
+const aiPanel    = document.getElementById('ai-panel');
+const aiBtn      = document.getElementById('ai-btn');
+const aiClose    = document.getElementById('ai-close');
+const aiMessages = document.getElementById('ai-messages');
+const aiInput    = document.getElementById('ai-input');
+const aiSend     = document.getElementById('ai-send');
 const panelOverlay = document.getElementById('panel-overlay');
 
 // ============================================================
 // INIT
 // ============================================================
 async function init() {
-  console.log('[TAGG] Initializing...');
-  settings = await tagg.getSettings();
-  state    = await tagg.getState();
-  console.log('[TAGG] State:', state);
+  state = await tagg.getState();
   renderAll();
   tagg.onStateUpdate(s => { state = s; renderAll(); });
 }
@@ -48,129 +38,26 @@ init();
 // RENDER
 // ============================================================
 function renderAll() {
-  renderTabs();
-  renderMainView();
-  renderBottomStrip();
   renderUrlBar();
   renderNavBtns();
+  renderMainUrlBar();
 }
 
-function renderTabs() {
-  tabsArea.innerHTML = '';
-  (state.tabs || []).forEach(tab => {
-    const card = document.createElement('div');
-    card.className = 'tab-card' + (tab.id === state.activeTab ? ' active' : '');
-    card.dataset.id = tab.id;
-
-    const domain = getDomain(tab.url);
-    const favHtml = tab.favicon && !tab.favicon.startsWith('chrome://')
-      ? `<img class="tab-fav" src="${esc(tab.favicon)}" onerror="this.style.display='none'" style="display:block" alt="">`
-      : '';
-
-    card.innerHTML = `
-      <div class="tab-urlbar">
-        <div class="tab-dot"></div>
-        ${favHtml}
-        <div class="tab-url">${esc(domain || 'New Tab')}</div>
-        <button class="tab-close-btn" data-id="${tab.id}">✕</button>
-      </div>
-      <div class="tab-preview"></div>
-    `;
-
-    card.addEventListener('click', e => {
-      if (e.target.classList.contains('tab-close-btn')) return;
-      tagg.switchTab(tab.id);
-    });
-
-    card.querySelector('.tab-close-btn').addEventListener('click', e => {
-      e.stopPropagation();
-      tagg.closeTab(tab.id);
-    });
-
-    tabsArea.appendChild(card);
-  });
-
-  // Scroll active into view
-  const active = tabsArea.querySelector('.tab-card.active');
-  if (active) active.scrollIntoView({ block:'nearest', behavior:'smooth' });
-}
-
-// Render main view URL and pagination
-function renderMainView() {
+function renderMainUrlBar() {
   const mainUrl = document.getElementById('main-url');
   const mainDot = document.querySelector('.main-dot');
-  const dotsContainer = document.getElementById('pagination-dots');
-  const placeholder = document.getElementById('browser-placeholder');
-
-  if (mainUrl) {
-    mainUrl.textContent = state.activeUrl || 'about:blank';
-  }
-  if (mainDot) {
-    mainDot.classList.toggle('secure', (state.activeUrl || '').startsWith('https://'));
-  }
-
-  // Update browser-placeholder with site info
-  if (placeholder) {
-    const tab = (state.tabs || []).find(t => t.id === state.activeTab);
-    if (tab) {
-      placeholder.innerHTML = `<div style="font-size:13px;color:#333;">${tab.title || 'No title'}</div><div style="font-size:11px;color:#888;">${tab.url || ''}</div>`;
-    } else {
-      placeholder.innerHTML = 'web content';
-    }
-  }
-
-  // Pagination dots
-  if (dotsContainer) {
-    dotsContainer.innerHTML = '';
-    (state.tabs || []).forEach((tab) => {
-      const dot = document.createElement('div');
-      dot.className = 'page-dot' + (tab.id === state.activeTab ? ' active' : '');
-      dot.addEventListener('click', () => tagg.switchTab(tab.id));
-      dotsContainer.appendChild(dot);
-    });
-  }
-}
-
-// Render bottom thumbnail strip
-function renderBottomStrip() {
-  const strip = document.getElementById('strip-tabs');
-  if (!strip) return;
-  
-  strip.innerHTML = '';
-  (state.tabs || []).forEach(tab => {
-    const card = document.createElement('div');
-    card.className = 'strip-card' + (tab.id === state.activeTab ? ' active' : '');
-    
-    const url = tab.url || '';
-    const isHttps = url.startsWith('https://');
-    const domain = getDomain(url) || 'New Tab';
-    
-    card.innerHTML = `
-      <div class="strip-urlbar">
-        <div class="strip-dot"></div>
-        <span class="strip-lock">${isHttps ? '🔒' : ''}</span>
-        <div class="strip-url">${esc(domain)}</div>
-      </div>
-      <div class="strip-preview"></div>
-    `;
-    
-    card.addEventListener('click', () => tagg.switchTab(tab.id));
-    strip.appendChild(card);
-  });
-  
-  // Scroll active into view
-  const active = strip.querySelector('.strip-card.active');
-  if (active) active.scrollIntoView({ inline:'center', behavior:'smooth' });
+  const mainLock = document.querySelector('.main-lock');
+  if (mainUrl) mainUrl.textContent = state.activeUrl || 'about:blank';
+  if (mainDot) mainDot.classList.toggle('secure', (state.activeUrl || '').startsWith('https://'));
+  if (mainLock) mainLock.style.opacity = (state.activeUrl || '').startsWith('https://') ? '1' : '0.3';
 }
 
 function renderUrlBar() {
   if (document.activeElement !== urlInput) {
     urlInput.value = state.activeUrl || '';
   }
-  // Secure indicator
   const isHttps = (state.activeUrl || '').startsWith('https://');
   urlDot.className = 'url-dot' + (isHttps ? ' secure' : '');
-  // Loading
   const loading = state.tabs?.find(t => t.id === state.activeTab)?.loading;
   urlWrap.classList.toggle('is-loading', !!loading);
 }
@@ -198,28 +85,7 @@ reloadBtn.addEventListener('click', () => {
   const loading = state.tabs?.find(t => t.id === state.activeTab)?.loading;
   loading ? tagg.stop() : tagg.reload();
 });
-
 document.getElementById('home-btn')?.addEventListener('click', () => tagg.navigate('https://www.google.com'));
-
-// New tab
-const newTabCard = document.getElementById('new-tab-card');
-console.log('[TAGG] new-tab-card element:', newTabCard);
-if (newTabCard) {
-  newTabCard.addEventListener('click', () => {
-    console.log('[TAGG] New tab clicked!');
-    tagg.newTab().then(() => console.log('[TAGG] New tab created'));
-  });
-} else {
-  console.error('[TAGG] new-tab-card NOT FOUND!');
-}
-
-const sbMax = document.getElementById('sb-max');
-if (sbMax) {
-  sbMax.addEventListener('click', () => {
-    console.log('[TAGG] Sidebar + clicked');
-    tagg.newTab();
-  });
-}
 
 // ============================================================
 // KEYBOARD SHORTCUTS
@@ -233,47 +99,6 @@ document.addEventListener('keydown', e => {
   if (e.altKey && e.key === 'ArrowLeft')  tagg.goBack();
   if (e.altKey && e.key === 'ArrowRight') tagg.goForward();
 });
-
-// ============================================================
-// SIDE ARROWS (Holorun style - switch tabs)
-// ============================================================
-function switchToTab(direction) {
-  const tabs = state.tabs || [];
-  if (tabs.length === 0) return;
-  const currentIdx = tabs.findIndex(t => t.id === state.activeTab);
-  let newIdx = currentIdx + direction;
-  if (newIdx < 0) newIdx = tabs.length - 1;
-  if (newIdx >= tabs.length) newIdx = 0;
-  tagg.switchTab(tabs[newIdx].id);
-}
-
-document.getElementById('prev-tab')?.addEventListener('click', () => switchToTab(-1));
-document.getElementById('next-tab')?.addEventListener('click', () => switchToTab(1));
-
-// Strip scroll buttons
-document.getElementById('strip-prev')?.addEventListener('click', () => {
-  document.getElementById('strip-tabs')?.scrollBy({ left: -200, behavior:'smooth' });
-});
-document.getElementById('strip-next')?.addEventListener('click', () => {
-  document.getElementById('strip-tabs')?.scrollBy({ left: 200, behavior:'smooth' });
-});
-
-// ============================================================
-// PANEL TOGGLE
-// ============================================================
-function togglePanel() {
-  panelCollapsed = !panelCollapsed;
-  rightPanel.classList.toggle('collapsed', panelCollapsed);
-  divArrow.textContent = panelCollapsed ? '‹' : '›';
-  showToast(panelCollapsed ? 'Panel hidden' : 'Panel shown');
-}
-
-divArrow.addEventListener('click', togglePanel);
-document.getElementById('panel-toggle-btn').addEventListener('click', togglePanel);
-
-// Scroll arrows
-scrollUp.addEventListener('click',   () => tabsArea.scrollBy({ top: -150, behavior:'smooth' }));
-scrollDown.addEventListener('click', () => tabsArea.scrollBy({ top:  150, behavior:'smooth' }));
 
 // ============================================================
 // AI PANEL
@@ -335,19 +160,15 @@ function appendMsg(role, text) {
 }
 
 // ============================================================
-// SCREENSHOT & VISION ANALYSIS
+// SCREENSHOT & VISION
 // ============================================================
 const screenshotBtn = document.getElementById('screenshot-btn');
 screenshotBtn?.addEventListener('click', captureAndAnalyze);
 
 async function captureAndAnalyze() {
-  showToast('📷 Capturing page...');
+  showToast('Capturing page...');
   screenshotBtn.disabled = true;
-  
-  // Open AI panel to show results
-  aiPanel.classList.add('open');
-  aiBtn.classList.add('active');
-  aiOpen = true;
+  toggleAI(true);
 
   const capture = await tagg.captureScreenshot();
   if (!capture.ok) {
@@ -357,7 +178,6 @@ async function captureAndAnalyze() {
   }
 
   appendMsg('user', '📷 Analyze this page screenshot');
-  
   const typing = document.createElement('div');
   typing.className = 'typing';
   typing.innerHTML = '<span></span><span></span><span></span>';
@@ -372,17 +192,11 @@ async function captureAndAnalyze() {
     return;
   }
 
-  const result = await tagg.analyzeScreenshot(capture.base64, s.apiKey, 
-    'Analyze this webpage screenshot. Describe what you see: the layout, main content, key elements, buttons, text, images, and any important information visible. Be detailed but concise.');
-  
+  const result = await tagg.analyzeScreenshot(capture.base64, s.apiKey,
+    'Analyze this webpage screenshot. Describe what you see: the layout, main content, key elements, and any important information visible.');
   typing.remove();
   screenshotBtn.disabled = false;
-  
-  if (result.ok) {
-    appendMsg('ai', result.analysis);
-  } else {
-    appendMsg('ai', `⚠ Analysis failed: ${result.error}`);
-  }
+  appendMsg('ai', result.ok ? result.analysis : `⚠ Analysis failed: ${result.error}`);
 }
 
 // ============================================================
@@ -399,10 +213,6 @@ document.getElementById('devtools-btn')?.addEventListener('click', () => tagg.op
 // ============================================================
 // UTILS
 // ============================================================
-function getDomain(url) {
-  try { return new URL(url).hostname.replace('www.',''); } catch { return url || ''; }
-}
-
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

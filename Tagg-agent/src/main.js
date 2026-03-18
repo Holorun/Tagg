@@ -246,21 +246,18 @@ function disableSplit() {
 // ============================================================
 // LAYOUT — position BrowserViews (Holorun style)
 // ============================================================
-const SIDEBAR_W = 48;      // Left sidebar width
-const RIGHT_PANEL_W = 266; // Right panel + divider
-const BOTTOM_STRIP_H = 128; // Bottom thumbnail strip
+const SIDEBAR_W    = 48; // Left sidebar width
+const MAIN_URL_H   = 36; // #main-urlbar height inside main-view
+const PADDING      = 8;  // #center-area padding
 
 function layoutViews() {
   if (!mainWin) return;
   const [winW, winH] = mainWin.getContentSize();
-  // Calculate main-view area (center-area only)
-  // Get center-area position/size from renderer
-  // Hardcode for now: left sidebar 48px, right panel 266px, bottom strip 128px, padding 8px
-  const mainViewX = SIDEBAR_W + 8;
-  const mainViewY = TAB_BAR_HEIGHT + 8;
-  const mainViewW = winW - SIDEBAR_W - RIGHT_PANEL_W - 16;
-  const mainViewH = winH - TAB_BAR_HEIGHT - BOTTOM_STRIP_H - 16;
-  const mainUrlBarH = 36;
+  const mainViewX = SIDEBAR_W + PADDING;
+  const mainViewY = TAB_BAR_HEIGHT + PADDING + MAIN_URL_H;
+  const mainViewW = winW - SIDEBAR_W - PADDING * 2;
+  const mainViewH = winH - TAB_BAR_HEIGHT - PADDING * 2 - MAIN_URL_H;
+  const mainUrlBarH = 0; // already accounted for in mainViewY
 
   // Hide all views first
   for (const [id, view] of views) {
@@ -291,12 +288,11 @@ function layoutViews() {
       });
     }
   } else {
-    // Fill the available main view area
     activeView.setBounds({
       x: mainViewX,
-      y: mainViewY + mainUrlBarH,
-      width: Math.max(mainViewW, 200),
-      height: Math.max(mainViewH - mainUrlBarH, 100)
+      y: mainViewY,
+      width:  Math.max(mainViewW, 200),
+      height: Math.max(mainViewH, 100)
     });
   }
   // Bring active views to front
