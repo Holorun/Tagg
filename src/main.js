@@ -38,6 +38,29 @@ const store = readStore();
 // CREATE MAIN WINDOW
 // ============================================================
 function createWindow() {
+    // IPC: Agent navigation commands
+    ipcMain.handle('agent:navigate', (event, { action, url }) => {
+      if (!activeTab) return false;
+      const view = views.get(activeTab);
+      if (!view) return false;
+      const wc = view.webContents;
+      switch (action) {
+        case 'goto':
+          wc.loadURL(url);
+          return true;
+        case 'reload':
+          wc.reload();
+          return true;
+        case 'back':
+          wc.goBack();
+          return true;
+        case 'forward':
+          wc.goForward();
+          return true;
+        default:
+          return false;
+      }
+    });
   mainWin = new BrowserWindow({
     width:  1280,
     height: 800,
