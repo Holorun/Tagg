@@ -471,6 +471,35 @@ ipcMain.handle('analyze-screenshot', async (e, { base64, apiKey, prompt }) => {
   }
 });
 
+// ============================================================
+// HOLOVIEW — capture specific tab or all tabs
+// ============================================================
+ipcMain.handle('capture-tab-snap', async (_e, tabId) => {
+  const view = views.get(tabId);
+  if (!view) return { ok: false, error: 'Tab not found' };
+  try {
+    const image = await view.webContents.capturePage();
+    return { ok: true, tabId, base64: image.toDataURL(),
+             url: view.webContents.getURL(), title: view.webContents.getTitle() };
+  } catch (err) {
+    return { ok: false, tabId, error: err.message };
+  }
+});
+
+ipcMain.handle('capture-all-snaps', async () => {
+  const snaps = [];
+  for (const [tabId, view] of views) {
+    try {
+      const image = await view.webContents.capturePage();
+      snaps.push({ ok: true, tabId, base64: image.toDataURL(),
+                   url: view.webContents.getURL(), title: view.webContents.getTitle() });
+    } catch (err) {
+      snaps.push({ ok: false, tabId, error: err.message });
+    }
+  }
+  return snaps;
+});
+
 // Window controls (for frameless window)
 ipcMain.on('win-minimize', () => mainWin?.minimize());
 ipcMain.on('win-maximize', () => {

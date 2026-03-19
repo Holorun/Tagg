@@ -299,6 +299,121 @@ body.mac #win-controls    { display:none!important; }
 #ai-send:hover { background:rgba(180,210,200,0.12); }
 #ai-send:disabled { opacity:0.3;cursor:not-allowed; }
 
+/* ============================================================ HOLOVIEW 3D */
+#holo3d {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(3, 8, 16, 0.97);
+  display: none; flex-direction: column; overflow: hidden;
+}
+#holo3d.open { display: flex; }
+
+#holo3d-header {
+  height: 44px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 16px;
+  background: rgba(8, 18, 26, 0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+#holo3d-logo { font-size: 18px; color: rgba(80,200,170,0.8); }
+#holo3d-title {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(200,230,220,0.9); font-weight: 700;
+}
+#holo3d-hint {
+  flex: 1; font-size: 9px; font-family: 'Space Mono', monospace;
+  color: rgba(160,200,190,0.25); letter-spacing: 0.08em;
+}
+#holo3d-refresh, #holo3d-close {
+  width: 26px; height: 26px; border-radius: 4px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  color: rgba(160,200,190,0.45); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+#holo3d-refresh:hover { background: rgba(80,200,170,0.1); color: rgba(80,200,170,0.9); }
+#holo3d-close:hover   { background: rgba(200,50,50,0.2); color: #ff8080; }
+
+#holo3d-loader {
+  position: absolute; inset: 0; z-index: 20;
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: rgba(3,8,16,0.97);
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: rgba(160,200,190,0.45); letter-spacing: 0.08em;
+}
+.holo-spin {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid rgba(80,200,170,0.1); border-top-color: rgba(80,200,170,0.7);
+  animation: spin 0.8s linear infinite;
+}
+
+#holo3d-scene {
+  flex: 1; perspective: 1400px; perspective-origin: 50% 42%;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.3s; cursor: grab;
+}
+#holo3d-scene:active { cursor: grabbing; }
+
+#holo3d-stage {
+  position: relative; transform-style: preserve-3d;
+  width: 0; height: 0; transition: transform 0.25s ease-out;
+}
+
+.holo-card {
+  position: absolute; width: 280px; height: 200px;
+  background: rgba(8,20,16,0.96);
+  border: 1px solid rgba(180,220,210,0.13); border-radius: 8px;
+  overflow: hidden; cursor: pointer; transform-style: preserve-3d;
+  display: flex; flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.holo-card:hover {
+  border-color: rgba(80,200,170,0.5);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.8), 0 0 24px rgba(80,200,170,0.1);
+}
+.holo-card.active {
+  border-color: rgba(80,200,170,0.35);
+  box-shadow: 0 0 0 2px rgba(80,200,170,0.18), 0 12px 40px rgba(0,0,0,0.8);
+}
+
+.holo-card-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; flex-shrink: 0;
+  background: rgba(4,12,10,0.97); border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.holo-card-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(160,200,190,0.25); flex-shrink: 0;
+}
+.holo-card-dot.secure { background: rgba(80,200,140,0.7); }
+.holo-card-domain {
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  color: rgba(180,220,210,0.55); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.holo-card-badge {
+  font-family: 'Space Mono', monospace; font-size: 8px;
+  color: rgba(160,200,190,0.2); flex-shrink: 0;
+}
+.holo-card-img { flex: 1; overflow: hidden; background: #f0f2f0; }
+.holo-card-img img {
+  width: 100%; height: 100%; object-fit: cover; object-position: top;
+  display: block; pointer-events: none;
+}
+.holo-card-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: rgba(160,200,190,0.3);
+  font-family: 'Space Mono', monospace; background: rgba(8,20,16,0.8);
+}
+.holo-card-footer {
+  padding: 5px 10px; flex-shrink: 0;
+  font-size: 9px; font-family: 'Space Mono', monospace;
+  color: rgba(180,220,210,0.35); background: rgba(4,12,10,0.97);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 /* ============================================================ TOAST */
 #toast { position:fixed;bottom:14px;left:50%;transform:translateX(-50%) translateY(10px);z-index:999;background:rgba(7,18,15,0.97);border:1px solid rgba(180,210,200,0.15);border-radius:3px;padding:7px 14px;font-size:10.5px;font-weight:500;color:var(--text);opacity:0;pointer-events:none;white-space:nowrap;transition:all 0.25s cubic-bezier(0.16,1,0.3,1);font-family:'Space Mono',monospace;letter-spacing:0.03em; }
 #toast.show { opacity:1;transform:translateX(-50%) translateY(0); }

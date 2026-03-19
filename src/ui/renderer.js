@@ -403,6 +403,7 @@ document.getElementById('sb-close').addEventListener('click',  () => tagg.close(
 document.getElementById('sb-min').addEventListener('click',    () => tagg.minimize());
 document.getElementById('fs-btn')?.addEventListener('click',   () => tagg.fullscreen());
 document.getElementById('devtools-btn')?.addEventListener('click', () => tagg.openDevTools());
+document.getElementById('holo3d-btn')?.addEventListener('click', () => HoloView.open());
 
 // ============================================================
 // UTILS

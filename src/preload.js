@@ -41,6 +41,10 @@ contextBridge.exposeInMainWorld('tagg', {
   analyzeScreenshot: (base64, apiKey, prompt) =>
     ipcRenderer.invoke('analyze-screenshot', { base64, apiKey, prompt }),
 
+  // ---- HOLOVIEW ----
+  captureTabSnap:  (tabId) => ipcRenderer.invoke('capture-tab-snap', tabId),
+  captureAllSnaps: ()      => ipcRenderer.invoke('capture-all-snaps'),
+
   // ---- STATE UPDATES (push from main) ----
   onStateUpdate: (cb) => {
     ipcRenderer.on('state-update', (e, state) => cb(state));
