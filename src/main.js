@@ -8,6 +8,7 @@ const { app, BrowserWindow, BrowserView, ipcMain,
         session, dialog, shell, Menu } = require('electron');
 const path = require('path');
 const fs   = require('fs');
+const http = require('http');
 
 // ---- STORE (simple JSON persistence) ----
 // storePath is resolved lazily after app is ready (app.getPath requires ready state)
@@ -532,11 +533,51 @@ function normalizeUrl(input) {
 }
 
 // ============================================================
+// CHROME BRIDGE — HTTP server that receives snaps from holoUI extension
+// ============================================================
+const BRIDGE_PORT = 7117;
+
+function startBridgeServer() {
+  const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
+
+    if (req.method === 'POST' && req.url === '/snap') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const snap = JSON.parse(body);
+          mainWin?.webContents.send('chrome-snap', snap);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+          console.log(`[Bridge] snap received from Chrome: ${snap.title || snap.url}`);
+        } catch {
+          res.writeHead(400); res.end(JSON.stringify({ ok: false, error: 'bad json' }));
+        }
+      });
+      return;
+    }
+
+    res.writeHead(404); res.end();
+  });
+
+  server.listen(BRIDGE_PORT, '127.0.0.1', () => {
+    console.log(`[Bridge] listening on http://127.0.0.1:${BRIDGE_PORT}`);
+  });
+  server.on('error', err => console.error('[Bridge] server error:', err.message));
+}
+
+// ============================================================
 // APP LIFECYCLE
 // ============================================================
 app.whenReady().then(() => {
   // Remove default menu
   Menu.setApplicationMenu(null);
+  startBridgeServer();
   createWindow();
 });
 

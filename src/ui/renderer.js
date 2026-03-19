@@ -405,6 +405,12 @@ document.getElementById('fs-btn')?.addEventListener('click',   () => tagg.fullsc
 document.getElementById('devtools-btn')?.addEventListener('click', () => tagg.openDevTools());
 document.getElementById('holo3d-btn')?.addEventListener('click', () => HoloView.open());
 
+// Chrome bridge — receive snaps from holoUI extension
+tagg.onChromeSnap(snap => {
+  showToast(`⬡ Chrome snap: ${snap.title || snap.url}`);
+  HoloView.addChromeSnap(snap);
+});
+
 // ============================================================
 // UTILS
 // ============================================================

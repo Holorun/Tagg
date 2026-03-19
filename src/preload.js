@@ -50,6 +50,11 @@ contextBridge.exposeInMainWorld('tagg', {
     ipcRenderer.on('state-update', (e, state) => cb(state));
   },
 
+  // ---- CHROME BRIDGE ----
+  onChromeSnap: (cb) => {
+    ipcRenderer.on('chrome-snap', (e, snap) => cb(snap));
+  },
+
   // ---- WINDOW CONTROLS ----
   minimize: () => ipcRenderer.send('win-minimize'),
   maximize: () => ipcRenderer.send('win-maximize'),

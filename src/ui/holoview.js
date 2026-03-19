@@ -104,7 +104,7 @@ const HoloView = (() => {
     snaps.forEach((snap, i) => {
       const angle = angleStep * i;
       const card = document.createElement('div');
-      card.className = 'holo-card' + (snap.isActive ? ' active' : '');
+      card.className = 'holo-card' + (snap.isActive ? ' active' : '') + (snap.source === 'chrome' ? ' chrome' : '');
       // Place card at its angle around the Y axis, offset so it's centered on the origin
       card.style.transform =
         `rotateY(${angle}deg) translateZ(${radius}px) translateX(-${CARD_W / 2}px) translateY(-${CARD_H / 2}px)`;
@@ -116,7 +116,7 @@ const HoloView = (() => {
         <div class="holo-card-bar">
           <div class="holo-card-dot${isHttps ? ' secure' : ''}"></div>
           <span class="holo-card-domain">${htmlEsc(domain)}</span>
-          <span class="holo-card-badge">${i + 1}/${n}</span>
+          <span class="holo-card-badge">${snap.source === 'chrome' ? '⬡ Chrome' : `${i + 1}/${n}`}</span>
         </div>
         <div class="holo-card-img">
           ${snap.base64
@@ -127,8 +127,14 @@ const HoloView = (() => {
       `;
 
       card.addEventListener('click', () => {
-        window.tagg.switchTab(snap.tabId);
-        HoloView.close();
+        if (snap.source === 'chrome') {
+          // Open the URL in a new Tagg tab
+          window.tagg.newTab(snap.url);
+          HoloView.close();
+        } else {
+          window.tagg.switchTab(snap.tabId);
+          HoloView.close();
+        }
       });
 
       stage.appendChild(card);
@@ -146,17 +152,30 @@ const HoloView = (() => {
       window.tagg.getState()
     ]);
 
-    snaps = results
+    const taggSnaps = results
       .filter(r => r.ok)
-      .map(r => ({ ...r, isActive: r.tabId === currentState.activeTab }));
+      .map(r => ({ ...r, source: 'tagg', isActive: r.tabId === currentState.activeTab }));
+
+    // Merge with any Chrome snaps already received (chrome snaps shown first)
+    snaps = [...chromeSnaps, ...taggSnaps];
 
     loader.style.display = 'none';
     scene.style.opacity  = '1';
     renderCards();
   }
 
+  // Chrome snaps received from the extension bridge
+  let chromeSnaps = [];
+
   // ---- Public API ----
   return {
+    addChromeSnap(snap) {
+      // Replace existing snap for same tab, or prepend
+      const idx = chromeSnaps.findIndex(s => s.tabId === snap.tabId && s.source === 'chrome');
+      if (idx >= 0) chromeSnaps[idx] = snap; else chromeSnaps.unshift(snap);
+      if (isOpen) renderCards();
+    },
+
     async open() {
       build();
       isOpen = true;

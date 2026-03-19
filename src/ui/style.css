@@ -406,6 +406,20 @@ body.mac #win-controls    { display:none!important; }
   font-size: 10px; color: rgba(160,200,190,0.3);
   font-family: 'Space Mono', monospace; background: rgba(8,20,16,0.8);
 }
+.holo-card.chrome {
+  border-color: rgba(66, 133, 244, 0.3);
+}
+.holo-card.chrome:hover {
+  border-color: rgba(66, 133, 244, 0.7);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.8), 0 0 24px rgba(66, 133, 244, 0.15);
+}
+.holo-card.chrome .holo-card-bar {
+  background: rgba(4, 10, 20, 0.97);
+}
+.holo-card.chrome .holo-card-badge {
+  color: rgba(66, 133, 244, 0.7);
+}
+
 .holo-card-footer {
   padding: 5px 10px; flex-shrink: 0;
   font-size: 9px; font-family: 'Space Mono', monospace;
