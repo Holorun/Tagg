@@ -160,6 +160,94 @@ function appendMsg(role, text) {
 }
 
 // ============================================================
+// ELEMENT CAPTURE — pick element from page → draggable widget
+// ============================================================
+const captureBtn = document.getElementById('capture-btn');
+captureBtn?.addEventListener('click', startCapture);
+
+async function startCapture() {
+  if (!state.activeTab) { showToast('Open a page first'); return; }
+  captureBtn.classList.add('active');
+  showToast('Click any element on the page…');
+
+  const result = await tagg.captureElement();
+  captureBtn.classList.remove('active');
+
+  if (!result?.ok) {
+    if (!result?.cancelled) showToast(result?.error || 'Capture failed');
+    return;
+  }
+  createWidget(result);
+  showToast('Element captured — drag to position');
+}
+
+function createWidget({ base64, rect, viewRect, text, url }) {
+  const layer = document.getElementById('widgets-layer');
+
+  // Place widget at the same screen position as the captured element
+  const wx = (viewRect?.x || 0) + rect.x;
+  const wy = (viewRect?.y || 0) + rect.y;
+
+  const w = document.createElement('div');
+  w.className = 'captured-widget';
+  w.style.left   = wx + 'px';
+  w.style.top    = wy + 'px';
+  w.style.width  = rect.w + 'px';
+  w.style.height = rect.h + 'px';
+
+  let hostname = '';
+  try { hostname = new URL(url).hostname; } catch {}
+
+  w.innerHTML = `
+    <div class="widget-bar">
+      <span class="widget-host">${esc(hostname)}</span>
+      <button class="widget-close" title="Remove">✕</button>
+    </div>
+    <img class="widget-img" src="${base64}" draggable="false" title="${esc(text.slice(0,80))}">
+    <div class="widget-resize-se"></div>
+  `;
+
+  // Close
+  w.querySelector('.widget-close').addEventListener('click', e => {
+    e.stopPropagation(); w.remove();
+  });
+
+  // Drag to move
+  let wdrag = null;
+  w.querySelector('.widget-bar').addEventListener('mousedown', e => {
+    if (e.target.classList.contains('widget-close')) return;
+    e.preventDefault();
+    wdrag = { type: 'move', sx: e.clientX, sy: e.clientY,
+               l: parseInt(w.style.left), t: parseInt(w.style.top) };
+  });
+
+  // Resize SE handle
+  w.querySelector('.widget-resize-se').addEventListener('mousedown', e => {
+    e.preventDefault(); e.stopPropagation();
+    wdrag = { type: 'resize', sx: e.clientX, sy: e.clientY,
+               l: parseInt(w.style.left), t: parseInt(w.style.top),
+               bw: w.offsetWidth, bh: w.offsetHeight };
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!wdrag) return;
+    const dx = e.clientX - wdrag.sx;
+    const dy = e.clientY - wdrag.sy;
+    if (wdrag.type === 'move') {
+      w.style.left = (wdrag.l + dx) + 'px';
+      w.style.top  = (wdrag.t + dy) + 'px';
+    } else {
+      w.style.width  = Math.max(wdrag.bw + dx, 80) + 'px';
+      w.style.height = Math.max(wdrag.bh + dy, 40) + 'px';
+    }
+  });
+
+  document.addEventListener('mouseup', () => { wdrag = null; });
+
+  layer.appendChild(w);
+}
+
+// ============================================================
 // SCREENSHOT & VISION
 // ============================================================
 const screenshotBtn = document.getElementById('screenshot-btn');

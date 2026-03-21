@@ -24,6 +24,7 @@
     <div class="loading-dot" id="loading-dot"></div>
   </div>
   <div id="topbar-right">
+    <button class="top-btn" id="capture-btn" title="Capture Element from Page">✂</button>
     <button class="top-btn" id="screenshot-btn" title="Capture & Analyze Page">📷</button>
     <button class="top-btn" id="ai-btn" title="Tagg AI">✦</button>
     <button class="top-btn" id="devtools-btn" title="Open DevTools">🛠</button>
@@ -106,6 +107,9 @@
     <button id="ai-send">↑</button>
   </div>
 </div>
+
+<!-- WIDGETS LAYER — captured elements live here, draggable, above the shell -->
+<div id="widgets-layer"></div>
 
 <!-- PANEL OVERLAY -->
 <div id="panel-overlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:199;background:rgba(0,0,0,0.01);"></div>

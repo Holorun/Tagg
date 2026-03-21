@@ -337,3 +337,57 @@ body.mac #win-controls    { display:none!important; }
 /* ============================================================ TOAST */
 #toast { position:fixed;bottom:14px;left:50%;transform:translateX(-50%) translateY(10px);z-index:999;background:rgba(7,18,15,0.97);border:1px solid rgba(180,210,200,0.15);border-radius:3px;padding:7px 14px;font-size:10.5px;font-weight:500;color:var(--text);opacity:0;pointer-events:none;white-space:nowrap;transition:all 0.25s cubic-bezier(0.16,1,0.3,1);font-family:'Space Mono',monospace;letter-spacing:0.03em; }
 #toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+
+/* ============================================================ WIDGETS LAYER */
+#widgets-layer { position:fixed;inset:0;pointer-events:none;z-index:300; }
+
+.captured-widget {
+  position:absolute;
+  pointer-events:all;
+  border:1px solid rgba(124,92,255,0.45);
+  border-radius:4px;
+  overflow:hidden;
+  background:#0e1a28;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5);
+  display:flex;
+  flex-direction:column;
+  min-width:80px;
+  min-height:40px;
+  resize:none;
+  transition:box-shadow 0.15s;
+}
+.captured-widget:hover { box-shadow:0 6px 30px rgba(124,92,255,0.25); }
+
+.widget-bar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:2px 6px;
+  background:rgba(124,92,255,0.18);
+  border-bottom:1px solid rgba(124,92,255,0.3);
+  cursor:move;
+  flex-shrink:0;
+  height:20px;
+  -webkit-app-region:no-drag;
+}
+.widget-host { font-size:9px;font-family:'Space Mono',monospace;color:rgba(180,160,255,0.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1; }
+.widget-close { border:none;background:transparent;color:rgba(180,160,255,0.5);cursor:pointer;font-size:9px;padding:0 2px;line-height:1;flex-shrink:0; }
+.widget-close:hover { color:#ff8080; }
+
+.widget-img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  flex:1;
+  min-height:0;
+}
+
+.widget-resize-se {
+  position:absolute;
+  bottom:0; right:0;
+  width:12px; height:12px;
+  cursor:se-resize;
+  background:linear-gradient(135deg,transparent 50%,rgba(124,92,255,0.5) 50%);
+  border-radius:0 0 4px 0;
+}

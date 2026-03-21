@@ -459,6 +459,94 @@ ipcMain.handle('analyze-screenshot', async (_e, { base64, apiKey, prompt }) => {
   }
 });
 
+// ============================================================
+// ELEMENT CAPTURE — inject selector into BrowserView, screenshot result
+// ============================================================
+ipcMain.handle('capture-element', async () => {
+  const view = views.get(activeTab);
+  if (!view) return { ok: false, error: 'No active tab' };
+
+  // Inject hover/click selector. executeJavaScript waits for the returned Promise.
+  let elementData;
+  try {
+    elementData = await view.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => {
+        // Remove any existing capture overlay
+        document.getElementById('__tagg_hl__')?.remove();
+        document.getElementById('__tagg_tip__')?.remove();
+
+        const hl = document.createElement('div');
+        hl.id = '__tagg_hl__';
+        hl.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483647;outline:2px solid #7c5cff;background:rgba(124,92,255,0.10);box-sizing:border-box;border-radius:2px;transition:all 0.05s ease';
+        document.body.appendChild(hl);
+
+        const tip = document.createElement('div');
+        tip.id = '__tagg_tip__';
+        tip.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#7c5cff;color:#fff;font:600 12px system-ui,sans-serif;padding:5px 14px;border-radius:20px;z-index:2147483647;pointer-events:none;box-shadow:0 2px 14px rgba(0,0,0,0.35);letter-spacing:0.02em';
+        tip.textContent = 'Click element to capture  ·  Esc to cancel';
+        document.body.appendChild(tip);
+
+        function onMove(e) {
+          const el = e.target;
+          if (el === hl || el === tip) return;
+          const r = el.getBoundingClientRect();
+          hl.style.left = r.left + 'px';
+          hl.style.top  = r.top  + 'px';
+          hl.style.width  = r.width  + 'px';
+          hl.style.height = r.height + 'px';
+        }
+        function onClick(e) {
+          if (e.target === hl || e.target === tip) return;
+          e.preventDefault(); e.stopImmediatePropagation();
+          const el = e.target;
+          const r  = el.getBoundingClientRect();
+          cleanup();
+          resolve({
+            rect: { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) },
+            text: (el.innerText || '').slice(0, 400),
+            tag:  el.tagName
+          });
+        }
+        function onKey(e) {
+          if (e.key === 'Escape') { cleanup(); reject(new Error('cancelled')); }
+        }
+        function cleanup() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('click',     onClick, true);
+          document.removeEventListener('keydown',   onKey);
+          hl.remove(); tip.remove();
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('click',     onClick, true);
+        document.addEventListener('keydown',   onKey);
+      })
+    `);
+  } catch (err) {
+    if (err.message === 'cancelled') return { ok: false, cancelled: true };
+    return { ok: false, error: err.message };
+  }
+
+  // Screenshot just the captured element's rect
+  const { rect } = elementData;
+  try {
+    const img = await view.webContents.capturePage({
+      x: Math.max(rect.x, 0), y: Math.max(rect.y, 0),
+      width: Math.max(rect.w, 1), height: Math.max(rect.h, 1)
+    });
+    return {
+      ok:       true,
+      base64:   img.toDataURL(),
+      rect,
+      viewRect: cachedRect,
+      text:     elementData.text,
+      tag:      elementData.tag,
+      url:      view.webContents.getURL()
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // Window controls (for frameless window)
 ipcMain.on('win-minimize', () => mainWin?.minimize());
 ipcMain.on('win-maximize', () => {

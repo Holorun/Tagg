@@ -41,6 +41,9 @@ contextBridge.exposeInMainWorld('tagg', {
   analyzeScreenshot: (base64, apiKey, prompt) =>
     ipcRenderer.invoke('analyze-screenshot', { base64, apiKey, prompt }),
 
+  // ---- ELEMENT CAPTURE ----
+  captureElement: () => ipcRenderer.invoke('capture-element'),
+
   // ---- STATE UPDATES (push from main) ----
   onStateUpdate: (cb) => {
     ipcRenderer.on('state-update', (e, state) => cb(state));
